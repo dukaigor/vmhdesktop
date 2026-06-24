@@ -1,0 +1,22 @@
+{
+  "name": "vmh-desktop",
+  "version": "1.0.0",
+  "description": "Valery Mystic Hair — App desktop: gestionale + WhatsApp Web reale, affiancati.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "app.vmhcrm.desktop",
+    "productName": "Valery Mystic Hair",
+    "files": ["main.js", "shell.html", "preload.js", "icon.png"],
+    "mac": { "target": "dmg", "category": "public.app-category.business", "icon": "icon.png" },
+    "win": { "target": "nsis", "icon": "icon.png" }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

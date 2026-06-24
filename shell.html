@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valery Mystic Hair</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:#dedcd4; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  #dash, #wa { position:absolute; border:0; }
+  #dash { inset:0; width:100%; height:100%; }
+  /* WhatsApp overlay — positioned over the dashboard's WhatsApp page content */
+  #waWrap { position:absolute; display:none; background:#0b141a; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.12); z-index:5; }
+  #waWrap.show { display:block; }
+  #wa { inset:0; width:100%; height:100%; }
+  #dashLoading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#9a958b; font-size:13px; background:#dedcd4; z-index:9; }
+</style>
+</head>
+<body>
+  <div id="dashLoading">Caricamento…</div>
+  <webview id="dash" partition="persist:dashboard" allowpopups></webview>
+  <div id="waWrap"><webview id="wa" src="https://web.whatsapp.com/" partition="persist:whatsapp" allowpopups></webview></div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const dashUrl = params.get('dash') || 'https://vmhcrm.app';
+  const dash = document.getElementById('dash');
+  const waWrap = document.getElementById('waWrap');
+  const loading = document.getElementById('dashLoading');
+  dash.setAttribute('src', dashUrl);
+
+  dash.addEventListener('did-stop-loading', () => { loading.style.display = 'none'; });
+  dash.addEventListener('did-fail-load', (e) => { if (e.isMainFrame) loading.textContent = 'Impossibile caricare ' + dashUrl; });
+
+  // Poll the dashboard: if the WhatsApp page is open, read the exact rectangle
+  // of its chat area and place the real WhatsApp Web webview over it.
+  const probe = `(function(){
+    var el = document.querySelector('[data-vmh-content="whatsapp"]');
+    if(!el) return null;
+    var r = el.getBoundingClientRect();
+    if(r.width < 10 || r.height < 10) return null;
+    return {x:Math.round(r.left), y:Math.round(r.top), w:Math.round(r.width), h:Math.round(r.height)};
+  })()`;
+
+  let shown = false;
+  async function tick() {
+    try {
+      const rect = await dash.executeJavaScript(probe, true);
+      if (rect) {
+        waWrap.style.left = rect.x + 'px';
+        waWrap.style.top = rect.y + 'px';
+        waWrap.style.width = rect.w + 'px';
+        waWrap.style.height = rect.h + 'px';
+        if (!shown) { waWrap.classList.add('show'); shown = true; }
+      } else if (shown) {
+        waWrap.classList.remove('show'); shown = false;
+      }
+    } catch (_) {}
+  }
+  dash.addEventListener('dom-ready', () => { setInterval(tick, 300); tick(); });
+
+  // give WhatsApp Web a real Chrome UA (set again from renderer as a safety net)
+  const wa = document.getElementById('wa');
+  wa.addEventListener('dom-ready', () => {
+    try { wa.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'); } catch (_) {}
+  });
+</script>
+</body>
+</html>
